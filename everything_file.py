@@ -16,6 +16,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.decomposition import PCA
 import seaborn as sns
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score
 
 
 
@@ -147,14 +148,14 @@ df_copy = df_copy.fillna(0)
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(df_copy)
 
-pca = PCA(n_components=10)
+pca = PCA(n_components=2)
 transformed_data = pca.fit_transform(X_scaled)
 
 cols = len(transformed_data)
 
 # Change the number of componants to 2 if you want to visualize
-#plt.scatter(transformed_data[:,0], transformed_data[:,1], c=df["outcome"], cmap="tab10")
-#plt.show()
+plt.scatter(transformed_data[:,0], transformed_data[:,1], c=df["outcome"], cmap="tab10")
+plt.show()
 
 # Variance per componant is not great, PCA is probably a bad idea
 print("Var: ", pca.explained_variance_ratio_)
@@ -169,20 +170,32 @@ plt.show()
 # %% - Random Forest
 
 # This takes ~20 sec to run because there's so much data.
-x_train, x_test, y_train, y_test = train_test_split(df, df['outcome'], test_size=0.25, random_state=0)
+x_train, x_test, y_train, y_test = train_test_split(df.drop(["outcome"], axis=1), df['outcome'], test_size=0.25, random_state=0)
 
 print("Training x:", x_train.shape,"y:", y_train.shape)
 print("Testing x:", x_test.shape,"y:", y_test.shape)
 
-# This takes ~20 sec to run because there's so much data.
-score = RandomForestClassifier().fit(x_train, y_train).score(x_test, y_test)
 
+model = RandomForestClassifier().fit(x_train, y_train)
+
+y_pred = model.predict(x_test)
+accuracy = accuracy_score(y_test, y_pred)
+
+score = model.score(x_test, y_test)
 print(f"Test Score (default n_estimators is 100): {score}")
+
+# If you want a confusion matrix, you have to the the test_size to 0.5 at the train_test_split above
+#cm = confusion_matrix(y_test, y_pred)
+#print(f"Confusion Matrix:\n{cm}")
+
+print(classification_report(y_test, y_pred))
+
 
 # %% - Random Forest (n-estimators)
 
 # This takes forever (like 7 min?) -> don't run it
 scores = []
+"""
 for i in range(10, 100, 10):
     score_i = RandomForestClassifier(n_estimators=i).fit(x_train, y_train).score(x_test, y_test)
     print(f"Score at {i} n_estimators: {score_i}")
@@ -191,6 +204,7 @@ plt.plot(range(10, 100, 10), scores)
 plt.xlabel("n_estimators")
 plt.ylabel("score")
 plt.show()
+"""
 
 # %% - Log Regression
 
