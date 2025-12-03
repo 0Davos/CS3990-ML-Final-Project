@@ -14,7 +14,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.decomposition import PCA
-
+import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 
 
@@ -137,10 +137,60 @@ df = df.drop(columns=columns_to_drop)
 df.to_csv("cleaned_golf_rolling_averages.csv", index=False)
 
 
-
-
 # %% - PCA - redo with cleaned_golf_rolling averages
+
+df_copy = df.copy()
+df_copy = df_copy.drop(["outcome"], axis=1)
+df_copy = df_copy.select_dtypes(include=['number'])
+df_copy = df_copy.fillna(0)
+
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(df_copy)
+
+pca = PCA(n_components=10)
+transformed_data = pca.fit_transform(X_scaled)
+
+cols = len(transformed_data)
+
+# Change the number of componants to 2 if you want to visualize
+#plt.scatter(transformed_data[:,0], transformed_data[:,1], c=df["outcome"], cmap="tab10")
+#plt.show()
+
+# Variance per componant is not great, PCA is probably a bad idea
+print("Var: ", pca.explained_variance_ratio_)
+
 # %% - Create Correlation Matrix?
+
+cor = df.corr()
+
+sns.heatmap(cor, xticklabels=False, yticklabels=False, cmap='coolwarm')
+plt.show()
+
 # %% - Random Forest
+
+# This takes ~20 sec to run because there's so much data.
+x_train, x_test, y_train, y_test = train_test_split(df, df['outcome'], test_size=0.25, random_state=0)
+
+print("Training x:", x_train.shape,"y:", y_train.shape)
+print("Testing x:", x_test.shape,"y:", y_test.shape)
+
+# This takes ~20 sec to run because there's so much data.
+score = RandomForestClassifier().fit(x_train, y_train).score(x_test, y_test)
+
+print(f"Test Score (default n_estimators is 100): {score}")
+
+# %% - Random Forest (n-estimators)
+
+# This takes forever (like 7 min?) -> don't run it
+scores = []
+for i in range(10, 100, 10):
+    score_i = RandomForestClassifier(n_estimators=i).fit(x_train, y_train).score(x_test, y_test)
+    print(f"Score at {i} n_estimators: {score_i}")
+    scores.append(score_i)
+plt.plot(range(10, 100, 10), scores)
+plt.xlabel("n_estimators")
+plt.ylabel("score")
+plt.show()
+
 # %% - Log Regression
 # %% - Neural Network
